@@ -1,0 +1,23 @@
+# Define a list of server names or IP addresses
+$servers = "Server1", "Server2", "Server3"
+
+# Define a PowerShell script block to execute on each server
+$scriptBlock = {
+    $diskInfo = Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 } | Select-Object DeviceID, Size, FreeSpace
+    $diskInfo | ForEach-Object {
+        [PSCustomObject]@{
+            ServerName = $env:COMPUTERNAME
+            Drive = $_.DeviceID
+            SizeGB = [math]::Round($_.Size / 1GB, 2)
+            FreeSpaceGB = [math]::Round($_.FreeSpace / 1GB, 2)
+        }
+    }
+}
+
+# Iterate through each server and execute the script block
+$result = foreach ($server in $servers) {
+    Invoke-Command -ComputerName $server -ScriptBlock $scriptBlock -ErrorAction SilentlyContinue
+}
+
+# Display the result in a table format
+$result | Format-Table -AutoSize
