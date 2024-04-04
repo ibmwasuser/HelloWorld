@@ -1,0 +1,61 @@
+# List of computer names
+$computers = "Computer1", "Computer2", "Computer3"
+
+# Create a StringBuilder object to build the HTML content
+$htmlBody = New-Object System.Text.StringBuilder
+
+# Add HTML header
+$htmlBody.AppendLine("<html>")
+$htmlBody.AppendLine("<head>")
+$htmlBody.AppendLine("<style>")
+$htmlBody.AppendLine("table { border-collapse: collapse; width: 100%; }")
+$htmlBody.AppendLine("th, td { border: 1px solid black; padding: 8px; text-align: left; }")
+$htmlBody.AppendLine("th { background-color: #f2f2f2; }")
+$htmlBody.AppendLine(".green { background-color: lightgreen; }")
+$htmlBody.AppendLine("</style>")
+$htmlBody.AppendLine("</head>")
+$htmlBody.AppendLine("<body>")
+$htmlBody.AppendLine("<h2>Disk space information:</h2>")
+$htmlBody.AppendLine("<table>")
+$htmlBody.AppendLine("<tr><th>Hostname</th><th>Drive</th><th>Total Space (GB)</th><th>Free Space (GB)</th><th>Free Space Percentage</th></tr>")
+
+foreach ($computer in $computers) {
+    $disks = Get-WmiObject -ComputerName $computer -Class Win32_LogicalDisk
+
+    foreach ($disk in $disks) {
+        $driveLetter = $disk.DeviceID
+        $totalSpaceGB = [math]::Round($disk.Size / 1GB, 2)
+        $freeSpaceGB = [math]::Round($disk.FreeSpace / 1GB, 2)
+        $freeSpacePercent = [math]::Round(($freeSpaceGB / $totalSpaceGB) * 100, 2)
+
+        # Add row with color coding
+        $rowClass = if ($freeSpacePercent -lt 20) { "green" } else { "" }
+        $htmlBody.AppendLine("<tr class='$rowClass'><td>$computer</td><td>$driveLetter</td><td>$totalSpaceGB</td><td>$freeSpaceGB</td><td>$freeSpacePercent%</td></tr>")
+    }
+}
+
+# Add HTML footer
+$htmlBody.AppendLine("</table>")
+$htmlBody.AppendLine("</body>")
+$htmlBody.AppendLine("</html>")
+
+# Convert StringBuilder to a string
+$htmlBodyString = $htmlBody.ToString()
+
+# Sending Email
+$from = "your_email@example.com"
+$to = "recipient@example.com"
+$subject = "Disk Space Information"
+$body = $htmlBodyString
+$smtpServer = "smtp.example.com"  # Replace with your SMTP server address
+$smtpPort = 587  # Replace with your SMTP server port
+$smtpUsername = "your_username"  # Replace with your email account username
+$smtpPassword = "your_password"  # Replace with your email account password
+
+# Convert the password to a secure string
+$securePassword = ConvertTo-SecureString $smtpPassword -AsPlainText -Force
+
+# Create email credential
+$smtpCredential = New-Object System.Management.Automation.PSCredential ($smtpUsername, $securePassword)
+
+Send-MailMessage -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $smtpCredential -From $from -To $to -Subject $subject -Body $body -BodyAsHtml
