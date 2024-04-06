@@ -1,0 +1,23 @@
+# Read input from file
+$inputFilePath = "input.txt"  # Path to your input file
+$inputData = Get-Content -Path $inputFilePath
+
+# Loop through each line in the input file
+foreach ($line in $inputData) {
+    # Split the line into components (Name, PSProvider, Root)
+    $components = $line -split '\s+'
+
+    # Check if there are enough components
+    if ($components.Count -eq 3) {
+        # Extract components
+        $name = $components[1]
+        $psProvider = $components[3]
+        $root = $components[5]
+
+        # Create PSDrive
+        New-PSDrive -Name $name -PSProvider $psProvider -Root $root -Persist
+        Write-Host "Mapped drive $name to $root"
+    } else {
+        Write-Host "Invalid input format: $line"
+    }
+}
