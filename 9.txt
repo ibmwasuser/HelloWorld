@@ -1,0 +1,44 @@
+# Define an array of server names
+$servers = @("server1", "server2", "server3")
+
+# Define drive letters to look for
+$driveLetters = "C", "D", "E", "F", "G", "H"
+
+# Loop through each server in the array
+foreach ($server in $servers) {
+    Write-Host "Mapping drives on $server..."
+
+    # Loop through each drive letter to check
+    foreach ($driveLetter in $driveLetters) {
+        # Construct the UNC path to the server's drive
+        $uncPath = "\\$server\$driveLetter$"
+
+        # Check if the drive exists on the server
+        if (Test-Path $uncPath) {
+            # Find an available drive letter dynamically from C to Y
+            $availableDrive = foreach ($letter in [char[]]('C'..'Y')) {
+                if (-not (Get-PSDrive -Name $letter -ErrorAction SilentlyContinue)) {
+                    $letter
+                    break
+                }
+            }
+
+            # If available drive letter found, map the network drive
+            if ($availableDrive) {
+                net use $availableDrive $uncPath
+
+                # Check if the mapping was successful
+                if (Test-Path $availableDrive) {
+                    Write-Host "Mapped $uncPath to $availableDrive on $server"
+                } else {
+                    Write-Host "Failed to map $uncPath to $availableDrive on $server"
+                }
+            } else {
+                Write-Host "No available drive letters to map $uncPath on $server"
+            }
+        } else {
+            Write-Host "Drive $driveLetter not found on $server"
+        }
+    }
+    Write-Host "Finished mapping drives on $server`n"
+}
