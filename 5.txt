@@ -1,0 +1,28 @@
+# Retrieve mapped network drives using Get-WmiObject
+$drives = Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType=4"
+
+# Create a table to store drive information
+$table = @()
+
+# Add drive information to the table
+foreach ($drive in $drives) {
+    $networkPath = $drive.ProviderName
+    $hostname = $networkPath.Split("\")[2]  # Get the hostname from the network path
+    $driveLetter = $networkPath.Split("\")[3]  # Get the drive letter from the network path
+
+    # Remove "$" symbol if it's present at the end of the drive letter
+    if ($driveLetter.EndsWith("$")) {
+        $driveLetter = $driveLetter.Substring(0, $driveLetter.Length - 1)
+    }
+
+    $table += [PSCustomObject]@{
+        "Drive Letter" = $drive.DeviceID
+        "Hostname" = $hostname
+        "Drive Letter$" = $driveLetter
+        "Free Space (GB)" = [math]::Round($drive.FreeSpace / 1GB, 2)
+        "Total Size (GB)" = [math]::Round($drive.Size / 1GB, 2)
+    }
+}
+
+# Output the table in a formatted manner
+$table | Format-Table -AutoSize
