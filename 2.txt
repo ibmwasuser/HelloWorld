@@ -1,0 +1,18 @@
+# Retrieve mapped network drives using Get-WmiObject
+$drives = Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType=4"
+
+# Create a table to store drive information
+$table = @()
+
+# Add drive information to the table
+foreach ($drive in $drives) {
+    $table += [PSCustomObject]@{
+        "Drive Letter" = $drive.DeviceID
+        "Network Path" = $drive.ProviderName
+        "Free Space (GB)" = [math]::Round($drive.FreeSpace / 1GB, 2)
+        "Total Size (GB)" = [math]::Round($drive.Size / 1GB, 2)
+    }
+}
+
+# Output the table in a formatted manner
+$table | Format-Table -AutoSize
