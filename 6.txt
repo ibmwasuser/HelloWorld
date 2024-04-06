@@ -1,0 +1,36 @@
+# List of server names
+$servers = "Server1", "Server2", "Server3"
+
+# Create an empty array to store drive information from all servers
+$allDrives = @()
+
+# Loop through each server
+foreach ($server in $servers) {
+    # Retrieve mapped network drives using Get-WmiObject
+    $drives = Get-WmiObject -Class Win32_LogicalDisk -ComputerName $server -Filter "DriveType=4"
+
+    # Add drive information to the array
+    foreach ($drive in $drives) {
+        $networkPath = $drive.ProviderName
+        $hostname = $networkPath.Split("\")[2]  # Get the hostname from the network path
+        $driveLetter = $networkPath.Split("\")[3]  # Get the drive letter from the network path
+
+        # Remove "$" symbol if it's present at the end of the drive letter
+        if ($driveLetter.EndsWith("$")) {
+            $driveLetter = $driveLetter.Substring(0, $driveLetter.Length - 1)
+        }
+
+        # Add drive information to the array
+        $allDrives += [PSCustomObject]@{
+            "Server" = $server
+            "Drive Letter" = $drive.DeviceID
+            "Hostname" = $hostname
+            "Drive Letter$" = $driveLetter
+            "Free Space (GB)" = [math]::Round($drive.FreeSpace / 1GB, 2)
+            "Total Size (GB)" = [math]::Round($drive.Size / 1GB, 2)
+        }
+    }
+}
+
+# Output the combined drive information in a formatted manner
+$allDrives | Format-Table -AutoSize
