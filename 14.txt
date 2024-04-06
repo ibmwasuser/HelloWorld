@@ -1,0 +1,80 @@
+# Read server names from the file
+$servers = Get-Content -Path "servers.txt"
+
+# Define function to split array into chunks
+function Split-Array {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [array]$InputArray,
+        [Parameter(Mandatory = $true)]
+        [int]$ChunkSize
+    )
+
+    $chunks = @()
+    $chunk = @()
+
+    foreach ($item in $InputArray) {
+        $chunk += $item
+        if ($chunk.Count -eq $ChunkSize) {
+            $chunks += ,$chunk
+            $chunk = @()
+        }
+    }
+
+    if ($chunk.Count -gt 0) {
+        $chunks += ,$chunk
+    }
+
+    return $chunks
+}
+
+# Split the list of servers into 8 parts
+$serverChunks = Split-Array -InputArray $servers -ChunkSize ([math]::Ceiling($servers.Count / 8))
+
+# List local drives
+$localDrives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -ne "\\" }
+
+# Define drive names from A to Z
+$driveNames = 65..90 | ForEach-Object { [char]$_ }
+
+# Define drive letters to check
+$driveLetters = "C$", "D$", "E$", "F$", "G$"
+
+# Initialize an empty array to store the output
+$output = @()
+
+# Loop through each part of the servers
+foreach ($serversChunk in $serverChunks) {
+    # Loop through each server in the chunk
+    foreach ($server in $serversChunk) {
+        foreach ($driveLetter in $driveLetters) {
+            # Define the UNC path for the server and drive
+            $uncPath = "\\$server\$driveLetter"
+
+            # Choose the next available drive name
+            $driveName = $driveNames[0]
+            $driveNames = $driveNames[1..$($driveNames.Length - 1)]
+
+            # Check if the drive is available locally
+            if ($localDrives.Root -notcontains $uncPath.Substring(0,2)) {
+                Write-Host "Drive $($uncPath.Substring(0,2)) not available locally. Skipping..."
+                continue
+            }
+
+            # Create the PSDrive
+            try {
+                $psDrive = New-PSDrive -Name $driveName -PSProvider FileSystem -Root $uncPath -Persist -ErrorAction Stop
+                Write-Host "PSDrive '$driveName' created for '$uncPath'"
+                
+                # Append the output
+                $output += $psDrive
+            } catch {
+                Write-Host "Failed to create PSDrive '$driveName' for '$uncPath': $_"
+            }
+        }
+    }
+}
+
+# Output the result
+$output
