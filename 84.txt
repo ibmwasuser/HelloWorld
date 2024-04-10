@@ -1,0 +1,66 @@
+To achieve this, we'll modify the script to retrieve disk information, calculate free space percentage, and then output the information to an HTML file with color coding based on free space percentage. Here's the updated script:
+
+```powershell
+# Path to the input file containing server names and drive details
+$inputFilePath = "C:\path\to\input.txt"
+# Output HTML file path
+$outputHtmlPath = "C:\temp\output.html"
+
+# Check if the input file exists
+if (Test-Path $inputFilePath) {
+    # Create an empty array to store drive information from all servers
+    $allDrives = @()
+
+    # Loop through each line in the input file
+    foreach ($line in (Get-Content -Path $inputFilePath)) {
+        # Split the line to extract server name and drive details
+        $serverName, $driveLetter = $line -split '\s+'
+
+        # Map remote drive as network drive
+        $mappedDrive = New-PSDrive -PSProvider FileSystem -Root "\\$serverName\$driveLetter$" -Persist
+
+        if ($mappedDrive) {
+            Write-Host "Mapped drive $mappedDrive from server $serverName successfully."
+
+            # Retrieve drive information
+            $driveInfo = Get-WmiObject -Class Win32_LogicalDisk -ComputerName $serverName -Filter "DeviceID='$driveLetter:'"
+
+            if ($driveInfo) {
+                # Calculate free space percentage
+                $freeSpacePercent = [math]::Round(($driveInfo.FreeSpace / $driveInfo.Size) * 100, 2)
+
+                # Determine color code based on free space percentage
+                $color = if ($freeSpacePercent -gt 50) { "green" } elseif ($freeSpacePercent -ge 20 -and $freeSpacePercent -le 30) { "yellow" } else { "white" }
+
+                # Add drive information to the array
+                $allDrives += [PSCustomObject]@{
+                    "Server" = $serverName
+                    "Drive Letter" = $driveLetter
+                    "Free Space (%) " = $freeSpacePercent
+                    "Color" = $color
+                }
+            } else {
+                Write-Host "Failed to retrieve drive information from server $serverName."
+            }
+
+            # Remove mapped network drive
+            Remove-PSDrive -Name $mappedDrive
+            Write-Host "Removed mapped drive $mappedDrive from server $serverName."
+        } else {
+            Write-Host "Failed to map drive from server $serverName."
+        }
+    }
+
+    # Output the combined drive information to HTML file
+    if ($allDrives.Count -gt 0) {
+        $allDrives | ConvertTo-Html -Property "Server", "Drive Letter", "Free Space (%)", "Color" -Fragment | Out-File -FilePath $outputHtmlPath
+        Write-Host "Output written to HTML file: $outputHtmlPath"
+    } else {
+        Write-Host "No drive information found to write to HTML file."
+    }
+} else {
+    Write-Host "Input file not found: $inputFilePath"
+}
+```
+
+This script will map remote drives, retrieve disk information, calculate free space percentage, determine color codes based on free space percentage, and then output the information to an HTML file. The color codes are applied to the "Free Space (%)" column based on the specified conditions.
