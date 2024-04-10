@@ -1,0 +1,25 @@
+# Path to the input file containing server names and drive details
+$inputFilePath = "C:\path\to\input.txt"
+
+# Check if the input file exists
+if (Test-Path $inputFilePath) {
+    # Read the input file
+    $inputData = Get-Content -Path $inputFilePath
+
+    # Loop through each line in the input file
+    foreach ($line in $inputData) {
+        # Split the line to extract server name and drive details
+        $serverName, $driveLetter = $line -split '\s+'
+
+        # Map remote drive as network drive
+        $mappedDrive = New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root "\\$serverName\$driveLetter$" -Persist
+
+        if ($mappedDrive) {
+            Write-Host "Mapped drive $driveLetter from server $serverName successfully."
+        } else {
+            Write-Host "Failed to map drive $driveLetter from server $serverName."
+        }
+    }
+} else {
+    Write-Host "Input file not found: $inputFilePath"
+}
