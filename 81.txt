@@ -1,0 +1,53 @@
+# Read server names and drive letters from file
+$inputFilePath = "input.txt"
+$serverDrivePairs = Get-Content -Path $inputFilePath | ConvertFrom-String
+
+# Create an empty array to store drive information from all servers
+$allDrives = @()
+
+# Loop through each server and drive pair
+foreach ($pair in $serverDrivePairs) {
+    $server = $pair.Server
+    $driveLetter = $pair.Drive
+
+    # Map network drive
+    $mappedDrive = New-PSDrive -Name "MappedDrive" -PSProvider FileSystem -Root "\\$server\$driveLetter$" -Persist -Scope Global
+
+    if ($mappedDrive) {
+        Write-Host "Mapped drive $driveLetter to server $server successfully."
+
+        # Retrieve mapped network drives using Get-WmiObject
+        $drives = Get-WmiObject -Class Win32_LogicalDisk -ComputerName $server -Filter "DriveType=4"
+
+        # Add drive information to the array
+        foreach ($drive in $drives) {
+            $networkPath = $drive.ProviderName
+            $hostname = $networkPath.Split("\")[2]  # Get the hostname from the network path
+            $driveLetter = $networkPath.Split("\")[3]  # Get the drive letter from the network path
+
+            # Remove "$" symbol if it's present at the end of the drive letter
+            if ($driveLetter.EndsWith("$")) {
+                $driveLetter = $driveLetter.Substring(0, $driveLetter.Length - 1)
+            }
+
+            # Add drive information to the array
+            $allDrives += [PSCustomObject]@{
+                "Server" = $server
+                "Drive Letter" = $drive.DeviceID
+                "Hostname" = $hostname
+                "Drive Letter$" = $driveLetter
+                "Free Space (GB)" = [math]::Round($drive.FreeSpace / 1GB, 2)
+                "Total Size (GB)" = [math]::Round($drive.Size / 1GB, 2)
+            }
+        }
+
+        # Remove mapped network drive
+        Remove-PSDrive -Name "MappedDrive" -Scope Global
+        Write-Host "Removed mapped drive $driveLetter from server $server."
+    } else {
+        Write-Host "Failed to map drive $driveLetter to server $server."
+    }
+}
+
+# Output the combined drive information in a formatted manner
+$allDrives | Format-Table -AutoSize
