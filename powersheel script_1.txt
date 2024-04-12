@@ -1,0 +1,102 @@
+# Input file path
+$inputFilePath = "C:\path\to\input.txt"
+
+# Output file path
+$outputFilePath = "C:\temp\output.html"
+
+# Function to add HTML table row
+function Add-TableRow {
+    param (
+        [string]$Name,
+        [double]$UsedGB,
+        [double]$FreeGB,
+        [string]$Provider,
+        [string]$Root,
+        [string]$CurrentLocation
+    )
+    $row = "<tr>"
+    $row += "<td>$Name</td>"
+    $row += "<td>$UsedGB</td>"
+    $row += "<td>$FreeGB</td>"
+    $row += "<td>$Provider</td>"
+    $row += "<td>$Root</td>"
+    $row += "<td>$CurrentLocation</td>"
+    $row += "</tr>"
+    Add-Content -Path $outputFilePath -Value $row
+}
+
+# Initialize output HTML file with table structure
+@"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Disk Space Information</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<h2>Disk Space Information</h2>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Used (GB)</th>
+        <th>Free (GB)</th>
+        <th>Provider</th>
+        <th>Root</th>
+        <th>CurrentLocation</th>
+    </tr>
+"@ | Out-File -FilePath $outputFilePath
+
+# Read input from file
+$inputData = Get-Content -Path $inputFilePath
+
+# Loop through each entry in the input file
+foreach ($entry in $inputData) {
+    $parts = $entry -split '\s+'  # Assuming entries are separated by spaces
+    
+    # Extract parts from entry
+    $Drive = $parts[0]
+    $Hostname = $parts[1]
+    $Root = "\\$Hostname\C$"
+    
+    # Map the drive
+    try {
+        New-PSDrive -Name $Drive -PSProvider FileSystem -Root $Root -Persist -ErrorAction Stop
+        $disk = Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='${Drive}:'" -ComputerName $Hostname
+        $UsedGB = [math]::Round(($disk.Size - $disk.FreeSpace) / 1GB, 2)
+        $FreeGB = [math]::Round($disk.FreeSpace / 1GB, 2)
+        $Provider = $disk.ProviderName
+        $CurrentLocation = $disk.DeviceID
+        $output = "Drive mapped successfully!"
+    } catch {
+        $output = "Error: $_"
+    }
+
+    # Add table row to output file
+    Add-TableRow -Name $Drive -UsedGB $UsedGB -FreeGB $FreeGB -Provider $Provider -Root $Root -CurrentLocation $CurrentLocation
+
+    # Remove the mapped drive
+    Remove-PSDrive -Name $Drive
+}
+
+# Complete the HTML file
+@"
+</table>
+</body>
+</html>
+"@ | Out-File -FilePath $outputFilePath -Append
+
+# Open the HTML file
+Invoke-Item -Path $outputFilePath

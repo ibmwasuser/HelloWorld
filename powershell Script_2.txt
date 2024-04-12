@@ -1,0 +1,77 @@
+# Input file path
+$inputFilePath = "C:\path\to\input.txt"
+
+# Output file path
+$outputFilePath = "C:\temp\output.html"
+
+# Check if the output file exists and was created within the last 24 hours
+if (Test-Path $outputFilePath) {
+    $fileCreationTime = (Get-Item $outputFilePath).CreationTime
+    $timeDifference = New-TimeSpan -Start $fileCreationTime -End (Get-Date)
+    if ($timeDifference.TotalHours -lt 24) {
+        $appendOutput = $true
+    }
+}
+
+# Initialize or append to the output HTML file
+if ($appendOutput) {
+    # Append to existing file
+    Add-Content -Path $outputFilePath -Value @"
+<tr>
+    <td>$Hostname</td>
+    <td>$DriveName</td>
+    <td>$UsedGB</td>
+    <td>$FreeGB</td>
+    <td>$Provider</td>
+    <td>$CurrentLocation</td>
+</tr>
+"@ -Force
+} else {
+    # Create new file with table structure
+    @"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Disk Space Information</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<h2>Disk Space Information</h2>
+<table>
+    <tr>
+        <th>Hostname</th>
+        <th>Drive Name</th>
+        <th>Used (GB)</th>
+        <th>Free (GB)</th>
+        <th>Provider</th>
+        <th>CurrentLocation</th>
+    </tr>
+    <tr>
+        <td>$Hostname</td>
+        <td>$DriveName</td>
+        <td>$UsedGB</td>
+        <td>$FreeGB</td>
+        <td>$Provider</td>
+        <td>$CurrentLocation</td>
+    </tr>
+</table>
+</body>
+</html>
+"@ | Out-File -FilePath $outputFilePath -Force
+}
+
+# Open the HTML file
+Invoke-Item -Path $outputFilePath
