@@ -1,0 +1,19 @@
+# Define the path to the output HTML file
+$outputHTMLFile = "C:\Path\To\Output.html"
+
+# Filter out rows from $outputArray where DeviceID is not equal to the excluded drive letter
+$outputArray = $outputArray | Where-Object { $_.DeviceID -ne $excludedDriveLetter }
+
+# Convert the filtered output array to HTML table format with borders
+$htmlTable = "<html><head><style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid black; padding: 8px; } th { background-color: #f2f2f2; }</style></head><body>" +
+             "<table><tr><th>System Name</th><th>Volume Name</th><th>Size (GB)</th><th>Free Space (GB)</th><th>Free Space (%)</th></tr>"
+$outputArray | ForEach-Object {
+    $htmlTable += "<tr><td>$($_.SystemName)</td><td>$($_.VolumeName)</td><td>$($_.SizeGB)</td><td>$($_.FreeSpaceGB)</td><td>$($_.FreeSpacePercent)</td></tr>"
+}
+$htmlTable += "</table></body></html>"
+
+# Save the HTML content to the output HTML file
+$htmlTable | Out-File -FilePath $outputHTMLFile
+
+# Display a message indicating the file has been saved
+Write-Host "Output has been saved to: $outputHTMLFile"
