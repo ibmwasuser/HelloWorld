@@ -1,3 +1,5 @@
+"<div style='text-align: center;'><table style='width: 50%;'><tr><td width='10%' font-family='Cambria' bgcolor='White' align='center' style='padding:4px; margin:0;'><B>Good > $warning</B></td><td width='9%' bgcolor='#FBB917' align='center'><B>Warning <= $warning</B></td><td width='9%' bgcolor='#FF0000' align='center'><B>Critical <= $critical%</B></td></tr></table></div>"
+
 # List of computer names
 $computers = "Computer1", "Computer2", "Computer3"
 
