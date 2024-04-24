@@ -1,25 +1,49 @@
-# Path to the input file containing server names and drive details
-$inputFilePath = "C:\path\to\input.txt"
-
-# Check if the input file exists
-if (Test-Path $inputFilePath) {
-    # Read the input file
-    $inputData = Get-Content -Path $inputFilePath
-
-    # Loop through each line in the input file
-    foreach ($line in $inputData) {
-        # Split the line to extract server name and drive details
-        $serverName, $driveLetter = $line -split '\s+'
-
-        # Map remote drive as network drive
-        $mappedDrive = New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root "\\$serverName\$driveLetter$" -Persist
-
-        if ($mappedDrive) {
-            Write-Host "Mapped drive $driveLetter from server $serverName successfully."
-        } else {
-            Write-Host "Failed to map drive $driveLetter from server $serverName."
-        }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+#<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centered Table</title>
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
     }
-} else {
-    Write-Host "Input file not found: $inputFilePath"
-}
+    th, td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: center;
+        font-family: Cambria;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    /* Center the div */
+    div.centered {
+        margin: 0 auto;
+        width: 80%; /* Adjust width as needed */
+    }
+</style>
+</head>
+<body>
+<div class="centered">
+    <table style="table-layout: fixed; width: 100%;">
+        <col width="10%">
+        <col width="20%">
+        <col width="10%">
+        <col width="15%">
+        <col width="15%">
+        <col width="10%">
+        <tr>
+            <th>DeviceID</th>
+            <th>PSCOmputerName</th>
+            <th>Size (GB)</th>
+            <th>Free Space (GB)</th>
+            <th>Free Space (%)</th>
+            <th>Uptimedays</th>
+        </tr>
+        <!-- Table content goes here -->
+    </table>
+</div>
+</body>
+</html>
