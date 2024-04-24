@@ -1,23 +1,49 @@
-# Read input from file
-$inputFilePath = "input.txt"  # Path to your input file
-$inputData = Get-Content -Path $inputFilePath
-
-# Loop through each line in the input file
-foreach ($line in $inputData) {
-    # Split the line into components (Name, PSProvider, Root)
-    $components = $line -split '\s+'
-
-    # Check if there are enough components
-    if ($components.Count -eq 3) {
-        # Extract components
-        $name = $components[1]
-        $psProvider = $components[3]
-        $root = $components[5]
-
-        # Create PSDrive
-        New-PSDrive -Name $name -PSProvider $psProvider -Root $root -Persist
-        Write-Host "Mapped drive $name to $root"
-    } else {
-        Write-Host "Invalid input format: $line"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disk Utilization Report</title>
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
     }
-}
+    th, td {
+        border: 1px solid black;
+        padding: 8px;
+        font-family: Cambria;
+        text-align: center;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    h1 {
+        text-align: center;
+        font-family: Cambria;
+        border-top: 1px;
+        border-right: 1px;
+        color: violet;
+    }
+</style>
+</head>
+<body>
+<h1>Disk Utilization Report</h1>
+<div style='text-align: center;'>
+    <table style='width: 50%; margin: 0 auto;'>
+        <tr>
+            <td width='10%' font-family='Cambria' bgcolor='White' align='center' style='padding: 4px; margin: 0;'>
+                <B>Good > $warning</B>
+            </td>
+            <td width='9%' bgcolor='#FBB917' align='center'>
+                <B>Warning <= $warning</B>
+            </td>
+            <td width='9%' bgcolor='#FEOOOO' align='center'>
+                <B>Critical <= $critical%</B>
+            </td>
+        </tr>
+    </table>
+</div>
+&nbsp;
+</body>
+</html>
